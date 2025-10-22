@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catatanku</title>
+
+  <!-- Font Poppins + Handwriting (Great Vibes) -->
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; transition: all 0.3s ease; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #ffc0cb, #ffdde1);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: white;
+      width: 100%;
+      max-width: 650px;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    h1 {
+      font-family: 'Great Vibes', cursive;
+      font-size: 48px;
+      text-align: center;
+      color: #ff69b4;
+      margin: 0 0 20px;
+      letter-spacing: 1px;
+    }
+
+    .top-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 15px;
+      font-size: 16px;
+      border: 2px solid #f7a8b8;
+      border-radius: 10px;
+      outline: none;
+      resize: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #ff69b4;
+      box-shadow: 0 0 5px #ffb6c1;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      color: white;
+      font-size: 15px;
+    }
+
+    button.save { background: #ff69b4; }
+    button.save:hover { background: #ff1493; }
+
+    button.clear { background: #6c757d; }
+    button.clear:hover { background: #5a6268; }
+
+    #search {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1.5px solid #ffc0cb;
+      outline: none;
+      font-size: 15px;
+    }
+
+    #search:focus {
+      border-color: #ff69b4;
+    }
+
+    .note {
+      background: #fff0f5;
+      border-left: 5px solid #ff69b4;
+      border-radius: 10px;
+      padding: 12px 15px;
+      margin-top: 12px;
+      position: relative;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      animation: fadeIn 0.3s ease;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(-5px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    .delete, .edit {
+      position: absolute;
+      top: 8px;
+      border: none;
+      background: none;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .delete { right: 10px; color: #dc3545; }
+    .edit { right: 35px; color: #007bff; }
+
+    .delete:hover { color: #b02a37; }
+    .edit:hover { color: #0056b3; }
+
+    .timestamp {
+      font-size: 12px;
+      color: #888;
+      margin-top: 5px;
+    }
+
+    p.empty {
+      text-align: center;
+      color: #777;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Catatanku</h1>
+
+    <div class="top-bar">
+      <textarea id="note-input" placeholder="Tulis sesuatu di sini..."></textarea>
+      <div class="buttons">
+        <button class="save" id="save-btn">Simpan</button>
+        <button class="clear" id="clear-all">Hapus Semua</button>
+      </div>
+      <input type="text" id="search" placeholder="Cari catatan...">
+    </div>
+
+    <div id="notes-list"></div>
+  </div>
+
+  <script>
+    const input = document.getElementById('note-input');
+    const saveBtn = document.getElementById('save-btn');
+    const clearAllBtn = document.getElementById('clear-all');
+    const notesList = document.getElementById('notes-list');
+    const searchInput = document.getElementById('search');
+
+    let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+    function saveNotes() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+    }
+
+    function renderNotes(filter = '') {
+      notesList.innerHTML = '';
+      const filteredNotes = notes.filter(n => n.text.toLowerCase().includes(filter.toLowerCase()));
+
+      if (filteredNotes.length === 0) {
+        notesList.innerHTML = '<p class="empty">Belum ada catatan 💭</p>';
+        return;
+      }
+
+      filteredNotes.forEach((note, index) => {
+        const div = document.createElement('div');
+        div.className = 'note';
+        div.innerHTML = `
+          <button class="edit" title="Edit catatan">✎</button>
+          <button class="delete" title="Hapus catatan">&times;</button>
+          <p>${note.text}</p>
+          <div class="timestamp">${note.time}</div>
+        `;
+
+        div.querySelector('.delete').addEventListener('click', () => {
+          notes.splice(index, 1);
+          saveNotes();
+          renderNotes(searchInput.value);
+        });
+
+        div.querySelector('.edit').addEventListener('click', () => {
+          const newText = prompt('Edit catatan:', note.text);
+          if (newText !== null && newText.trim() !== '') {
+            note.text = newText.trim();
+            note.time = formatDate();
+            saveNotes();
+            renderNotes(searchInput.value);
+          }
+        });
+
+        notesList.appendChild(div);
+      });
+    }
+
+    function formatDate() {
+      const now = new Date();
+      return now.toLocaleString('id-ID', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (text !== '') {
+        notes.push({ text, time: formatDate() });
+        saveNotes();
+        renderNotes(searchInput.value);
+        input.value = '';
+      }
+    });
+
+    clearAllBtn.addEventListener('click', () => {
+      if (confirm('Yakin mau hapus semua catatan?')) {
+        notes = [];
+        saveNotes();
+        renderNotes(searchInput.value);
+      }
+    });
+
+    searchInput.addEventListener('input', e => renderNotes(e.target.value));
+
+    renderNotes();
+  </script>
+</body>
+</html>
